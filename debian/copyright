@@ -1,0 +1,62 @@
+This package was debianized by Sandro Tosi <matrixhasu@gmail.com> on
+Tue, 18 Dec 2007 00:24:56 +0100, based on the good work done by Paul
+Boddie for Ubuntu
+
+It was downloaded from http://www.boddie.org.uk/python/pprocess.html
+
+Upstream Author:
+
+    Paul Boddie <paul@boddie.org.uk>
+
+Copyright: 
+
+    Copyright (C) 2005, 2006, 2007 Paul Boddie <paul@boddie.org.uk>
+
+License:
+
+    This  program is  free software;  you can  redistribute  it and/or
+    modify it under the terms of the GNU Lesser General Public License
+    as published by the Free  Software Foundation; either version 3 of
+    the License, or (at your option) any later version.
+
+    This program  is distributed in the  hope that it  will be useful,
+    but  WITHOUT ANY WARRANTY;  without even  the implied  warranty of
+    MERCHANTABILITY or FITNESS FOR  A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+In a Debian system the complete text of the GNU Lesser General Public
+License can be found in the file `/usr/share/common-licenses/LGPL'.
+
+The Debian packaging is (C) 2007, Sandro Tosi <matrixhasu@gmail.com> and
+is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
+
+PyGmy has different copyright and licence notes, reported here below:
+
+Copyright:
+
+    Copyright (C) 2005 Dave Griffiths
+    Copyright (C) 2006, 2007 Paul Boddie <paul@boddie.org.uk>
+
+License:
+
+    This  program is  free software;  you can  redistribute  it and/or
+    modify it  under the  terms of the  GNU General Public  License as
+    published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version.
+
+    This program  is distributed in the  hope that it  will be useful,
+    but  WITHOUT ANY WARRANTY;  without even  the implied  warranty of
+    MERCHANTABILITY or FITNESS FOR  A PARTICULAR PURPOSE.  See the GNU
+    General Public License for more details.
+
+    You should have received a  copy of the GNU General Public License
+    along  with this  program;  if  not, write  to  the Free  Software
+    Foundation,  Inc.,  51  Franklin   St,  Fifth  Floor,  Boston,  MA
+    02110-1301, USA.
+
+Notes on the Inclusion of PyGmy:
+
+    PyGmy is included in  this distribution of parallel/pprocess as an
+    independent    demonstration    of    the    pprocess    library's
+    facilities. This distribution is thus considered as an aggregation
+    of the two works, with separate licences governing each work.

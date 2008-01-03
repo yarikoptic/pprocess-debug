@@ -1,0 +1,24 @@
+Source: pprocess
+Section: python
+Priority: optional
+Maintainer: Debian Python Modules Team <python-modules-team@lists.alioth.debian.org>
+Uploaders: Sandro Tosi <matrixhasu@gmail.com>
+Build-Depends: debhelper (>= 5.0.38), python-all, dpatch
+Build-Depends-Indep: python-support (>= 0.6), python-epydoc
+Standards-Version: 3.7.3
+Homepage: http://www.boddie.org.uk/python/pprocess.html
+Vcs-Svn: svn://svn.debian.org/python-modules/packages/pprocess/trunk/
+Vcs-Browser: http://svn.debian.org/wsvn/python-modules/packages/pprocess/trunk/?op=log
+XS-Python-Version: all
+
+Package: python-pprocess
+Architecture: all
+Depends: ${python:Depends}, ${misc:Depends}
+XB-Python-Version: ${python:Versions}
+Description: Elementary parallel programming for Python
+ The  pprocess   module  provides  elementary   support  for  parallel
+ programming in  Python using a  fork-based process creation  model in
+ conjunction  with a  channel-based  communications model  implemented
+ using socketpair and poll. On systems with multiple CPUs or multicore
+ CPUs, processes should take advantage of as many CPUs or cores as the
+ operating system permits.

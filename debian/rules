@@ -1,0 +1,60 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+PYVERS=$(shell pyversions -r)
+
+include /usr/share/dpatch/dpatch.make
+
+build: build-stamp
+build-stamp: patch-stamp
+	dh_testdir
+
+	# Add here commands to compile the package.
+	for python in $(PYVERS) ; do \
+	    $$python setup.py build; \
+	done
+	# generating api documentation
+	tools/apidocs.sh
+	touch $@
+
+clean: unpatch
+	dh_testdir
+	dh_testroot
+	# Add here commands to clean up after the build process.
+	for python in $(PYVERS) ; do \
+	    $$python setup.py clean; \
+	done
+	find . -name '*.py[co]' -delete
+	[ ! -d build ] || rm -rf build
+	[ ! -d apidocs ] || rm -rf apidocs
+	dh_clean build-stamp
+
+install: build
+	dh_testdir
+	dh_testroot
+
+	# Add here commands to install the package into debian/pprocess.
+	python setup.py install --root=$(CURDIR)/debian/python-pprocess
+
+binary-arch:
+# nothing to do here
+
+# Build architecture-independent files here.
+binary-indep: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs 
+	dh_installdocs		README.txt docs/*.html apidocs
+	dh_installexamples	examples/* tests
+	dh_pysupport
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install

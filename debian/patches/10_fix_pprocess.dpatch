@@ -1,0 +1,16 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 10_fix_pprocess.dpatch by Sandro Tosi <matrixhasu@gmail.com>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad pprocess~/pprocess.py pprocess/pprocess.py
+--- pprocess~/pprocess.py	2007-11-24 01:00:15.000000000 +0100
++++ pprocess/pprocess.py	2008-01-03 19:48:48.474096535 +0100
+@@ -1,5 +1,3 @@
+-#!/usr/bin/env python
+-
+ """
+ A simple parallel processing API for Python, inspired somewhat by the thread
+ module, slightly less by pypar, and slightly less still by pypvm.
