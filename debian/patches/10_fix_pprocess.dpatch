@@ -2,7 +2,7 @@
 ## 10_fix_pprocess.dpatch by Sandro Tosi <matrixhasu@gmail.com>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
-## DP: No description.
+## DP: remove shebang line since it's a module, not a script
 
 @DPATCH@
 diff -urNad pprocess~/pprocess.py pprocess/pprocess.py

@@ -7,6 +7,19 @@ channel-based communications model implemented using socketpair and poll. On
 systems with multiple CPUs or multicore CPUs, processes should take advantage
 of as many CPUs or cores as the operating system permits.
 
+Tutorial
+--------
+
+The tutorial provides some information about the examples described below.
+See the docs/tutorial.html file in the distribution for more details.
+
+Reference
+---------
+
+A description of the different mechanisms provided by the pprocess module can
+be found in the reference document. See the docs/reference.html file in the
+distribution for more details.
+
 Quick Start
 -----------
 
@@ -51,11 +64,31 @@ loop body) all use MakeParallel to make those functions parallel-aware, thus
 permitting the conversion of "normal" functions to a form usable in the
 parallel environment.
 
+Reusable Processes
+------------------
+
 An additional example not listed above, simple_managed_map_reusable.py,
 employs the MakeReusable class instead of MakeParallel in order to demonstrate
-reusable processes and channels.
+reusable processes and channels:
 
-The tutorial provides some information about the examples: docs/tutorial.xhtml
+PYTHONPATH=. python examples/simple_managed_map_reusable.py
+
+Persistent Processes
+--------------------
+
+A number of persistent variants of some of the above examples employ a
+persistent or background process which can be started by one process and
+contacted later by another in order to collect the results of a computation.
+For example:
+
+PYTHONPATH=. python examples/simple_persistent_managed.py --start
+PYTHONPATH=. python examples/simple_persistent_managed.py --reconnect
+
+PYTHONPATH=. python examples/simple_background_queue.py --start
+PYTHONPATH=. python examples/simple_background_queue.py --reconnect
+
+PYTHONPATH=. python examples/simple_persistent_queue.py --start
+PYTHONPATH=. python examples/simple_persistent_queue.py --reconnect
 
 Parallel Raytracing with PyGmy
 ------------------------------
@@ -111,6 +144,16 @@ Dependencies
 
 This software depends on standard library features which are stated as being
 available only on "UNIX"; it has only been tested on a GNU/Linux system.
+
+New in pprocess 0.4 (Changes since pprocess 0.3.1)
+--------------------------------------------------
+
+  * Added support for persistent/background processes.
+  * Added a utility function to detect and return the number of processor
+    cores available.
+  * Added missing documentation stylesheet.
+  * Added support for Solaris using pipes instead of socket pairs, since
+    the latter do not apparently work properly with poll on Solaris.
 
 New in pprocess 0.3.1 (Changes since pprocess 0.3)
 --------------------------------------------------

@@ -15,7 +15,21 @@ making a program parallel-aware - that is, where the program can take
 advantage of more than one processor to simultaneously process data - is to
 use the <code>pmap</code> function.</p>
 
-<h2>Converting Map-Style Code</h2>
+<ul>
+<li><a href="#pmap">Converting Map-Style Code</a></li>
+<li><a href="#Map">Converting Invocations to Parallel Operations</a></li>
+<li><a href="#Queue">Converting Arbitrarily-Ordered Invocations</a></li>
+<li><a href="#create">Converting Inline Computations</a></li>
+<li><a href="#MakeReusable">Reusing Processes in Parallel Programs</a></li>
+<li><a href="#BackgroundCallable">Performing Computations in Background Processes</a></li>
+<li><a href="#ManagingBackgroundProcesses">Managing Several Background Processes</a></li>
+<li><a href="#Summary">Summary</a></li>
+</ul>
+
+<p>For a brief summary of each of the features of <code>pprocess</code>, see
+the <a href="reference.html">reference document</a>.</p>
+
+<h2 id="pmap">Converting Map-Style Code</h2>
 
 <p>Consider a program using the built-in <code>map</code> function and a sequence of inputs:</p>
 
@@ -99,7 +113,7 @@ processes to be active at any given time (the value of the <code>limit</code>
 variable is defined elsewhere), several calculations can now be performed in
 parallel.</p>
 
-<h2>Converting Invocations to Parallel Operations</h2>
+<h2 id="Map">Converting Invocations to Parallel Operations</h2>
 
 <p>Although some programs make natural use of the <code>map</code> function,
 others may employ an invocation in a nested loop. This may also be converted
@@ -198,7 +212,7 @@ computations such that iterating over the object or accessing the object using
 list operations provides the results in the same order as their corresponding
 inputs.</p>
 
-<h2>Converting Arbitrarily-Ordered Invocations</h2>
+<h2 id="Queue">Converting Arbitrarily-Ordered Invocations</h2>
 
 <p>In some programs, it is not important to receive the results of
 computations in any particular order, usually because either the order of
@@ -245,7 +259,7 @@ get no benefit from parallelisation in the above example.</p>
 <p>We can bring the benefits of parallel processing to the above program with
 the following code:</p>
 
-<pre>
+<pre id="simple_managed_queue">
     t = time.time()
 
     # Initialise the communications queue with a limit on the number of
@@ -433,7 +447,7 @@ channel parameters, and the management of callables using the
 <code>start</code> method still calls the provided callable, but using a
 different notation from that employed previously.</p>
 
-<h2>Converting Inline Computations</h2>
+<h2 id="create">Converting Inline Computations</h2>
 
 <p>Although many programs employ functions and other useful abstractions which
 can be treated as parallelisable units, some programs perform computations
@@ -525,7 +539,7 @@ collected, a <code>pprocess.Map</code> object is used, since it will maintain
 the results in the same order as the initiation of the computations which
 produced them.</p>
 
-<h2>Reusing Processes in Parallel Programs</h2>
+<h2 id="MakeReusable">Reusing Processes in Parallel Programs</h2>
 
 <p>One notable aspect of the above programs when parallelised is that each
 invocation of a computation in parallel creates a new process in which the
@@ -577,7 +591,273 @@ computations may be performed in parallel using a pool of processes instead of
 creating a new process for each computation and then discarding it, only to
 create a new process for the next computation.</p>
 
-<h2>Summary</h2>
+<h2 id="BackgroundCallable">Performing Computations in Background Processes</h2>
+
+<p>Occasionally, it is desirable to initiate time-consuming computations and to
+not only leave such processes running in the background, but to be able to detach
+the creating process from them completely, potentially terminating the creating
+process altogether, and yet also be able to collect the results of the created
+processes at a later time, potentially in another completely different process.
+For such situations, we can make use of the <code>BackgroundCallable</code>
+class, which converts a parallel-aware callable into a callable which will run
+in a background process when invoked.</p>
+
+<p>Consider this excerpt from a modified version of the <a
+href="#simple_managed_queue">simple_managed_queue</a> program:</p>
+
+<pre>
+<strong>def task():</strong>
+
+    # Initialise the communications queue with a limit on the number of
+    # channels/processes.
+
+    queue = pprocess.Queue(limit=limit)
+
+    # Initialise an array.
+
+    results = [0] * N * N
+
+    # Wrap the calculate function and manage it.
+
+    calc = queue.manage(pprocess.MakeParallel(calculate))
+
+    # Perform the work.
+
+    print "Calculating..."
+    for i in range(0, N):
+        for j in range(0, N):
+            calc(i, j)
+
+    # Store the results as they arrive.
+
+    print "Finishing..."
+    for i, j, result in queue:
+        results[i*N+j] = result
+
+    <strong>return results</strong>
+</pre>
+
+<p>Here, we have converted the main program into a function, and instead of
+printing out the results, we return the results list from the function.</p>
+
+<p>Now, let us consider the new main program (with the relevant mechanisms
+highlighted):</p>
+
+<pre>
+    t = time.time()
+
+    if "--reconnect" not in sys.argv:
+
+        # Wrap the computation and manage it.
+
+        <strong>ptask = pprocess.BackgroundCallable("task.socket", pprocess.MakeParallel(task))</strong>
+
+        # Perform the work.
+
+        ptask()
+
+        # Discard the callable.
+
+        del ptask
+        print "Discarded the callable."
+
+    if "--start" not in sys.argv:
+
+        # Open a queue and reconnect to the task.
+
+        print "Opening a queue."
+        <strong>queue = pprocess.BackgroundQueue("task.socket")</strong>
+
+        # Wait for the results.
+
+        print "Waiting for persistent results"
+        for results in queue:
+            pass # should only be one element
+
+        # Show the results.
+
+        for i in range(0, N):
+            for result in results[i*N:i*N+N]:
+                print result,
+            print
+
+        print "Time taken:", time.time() - t
+</pre>
+
+<p>(This code in context with <code>import</code> statements and functions is
+found in the <code>examples/simple_background_queue.py</code> file.)</p>
+
+<p>This new main program has two parts: the part which initiates the
+computation, and the part which connects to the computation in order to collect
+the results. Both parts can be run in the same process, and this should result
+in similar behaviour to that of the original
+<a href="#simple_managed_queue">simple_managed_queue</a> program.</p>
+
+<p>In the above program, however, we are free to specify <code>--start</code> as
+an option when running the program, and the result of this is merely to initiate
+the computation in a background process, using <code>BackgroundCallable</code>
+to obtain a callable which, when invoked, creates the background process and
+runs the computation. After doing this, the program will then exit, but it will
+leave the computation running as a collection of background processes, and a
+special file called <code>task.socket</code> will exist in the current working
+directory.</p>
+
+<p>When the above program is run using the <code>--reconnect</code> option, an
+attempt will be made to reconnect to the background processes already created by
+attempting to contact them using the previously created <code>task.socket</code>
+special file (which is, in fact, a UNIX-domain socket); this being done using
+the <code>BackgroundQueue</code> function which will handle the incoming results
+in a fashion similar to that of a <code>Queue</code> object. Since only one
+result is returned by the computation (as defined by the <code>return</code>
+statement in the <code>task</code> function), we need only expect one element to
+be collected by the queue: a list containing all of the results produced in the
+computation.</p>
+
+<h2 id="ManagingBackgroundProcesses">Managing Several Background Processes</h2>
+
+<p>In the above example, a single background process was used to manage a number
+of other processes, with all of them running in the background. However, it can
+be desirable to manage more than one background process.</p>
+
+<p>Consider this excerpt from a modified version of the <a
+href="#simple_managed_queue">simple_managed_queue</a> program:</p>
+
+<pre>
+<strong>def task(i):</strong>
+
+    # Initialise the communications queue with a limit on the number of
+    # channels/processes.
+
+    queue = pprocess.Queue(limit=limit)
+
+    # Initialise an array.
+
+    results = [0] * N
+
+    # Wrap the calculate function and manage it.
+
+    calc = queue.manage(pprocess.MakeParallel(calculate))
+
+    # Perform the work.
+
+    print "Calculating..."
+    <strong>for j in range(0, N):</strong>
+        <strong>calc(i, j)</strong>
+
+    # Store the results as they arrive.
+
+    print "Finishing..."
+    <strong>for i, j, result in queue:</strong>
+        <strong>results[j] = result</strong>
+
+    <strong>return i, results</strong>
+</pre>
+
+<p>Just as we see in the previous example, a function called <code>task</code>
+has been defined to hold a background computation, and this function returns a
+portion of the results. However, unlike the previous example or the original
+example, the scope of the results of the computation collected in the function
+have been changed: here, only results for calculations involving a certain value
+of <code>i</code> are collected, with the particular value of <code>i</code>
+returned along with the appropriate portion of the results.</p>
+
+<p>Now, let us consider the new main program (with the relevant mechanisms
+highlighted):</p>
+
+<pre>
+    t = time.time()
+
+    if "--reconnect" not in sys.argv:
+
+        # Wrap the computation and manage it.
+
+        <strong>ptask = pprocess.MakeParallel(task)</strong>
+
+        <strong>for i in range(0, N):</strong>
+
+            # Make a distinct callable for each part of the computation.
+
+            <strong>ptask_i = pprocess.BackgroundCallable("task-%d.socket" % i, ptask)</strong>
+
+            # Perform the work.
+
+            <strong>ptask_i(i)</strong>
+
+        # Discard the callable.
+
+        del ptask
+        print "Discarded the callable."
+
+    if "--start" not in sys.argv:
+
+        # Open a queue and reconnect to the task.
+
+        print "Opening a queue."
+        <strong>queue = pprocess.PersistentQueue()</strong>
+        <strong>for i in range(0, N):</strong>
+            <strong>queue.connect("task-%d.socket" % i)</strong>
+
+        # Initialise an array.
+
+        <strong>results = [0] * N</strong>
+
+        # Wait for the results.
+
+        print "Waiting for persistent results"
+        <strong>for i, result in queue:</strong>
+            <strong>results[i] = result</strong>
+
+        # Show the results.
+
+        for i in range(0, N):
+            <strong>for result in results[i]:</strong>
+                print result,
+            print
+
+        print "Time taken:", time.time() - t
+</pre>
+
+<p>(This code in context with <code>import</code> statements and functions is
+found in the <code>examples/simple_persistent_queue.py</code> file.)</p>
+
+<p>In the first section, the process of making a parallel-aware callable is as
+expected, but instead of then invoking a single background version of such a
+callable, as in the previous example, we create a version for each value of
+<code>i</code> (using <code>BackgroundCallable</code>) and then invoke each one.
+The result of this is a total of <code>N</code> background processes, each
+running an invocation of the <code>task</code> function with a distinct value of
+<code>i</code> (which in turn perform computations), and each employing a
+UNIX-domain socket for communication with a name of the form
+<code>task-<em>i</em>.socket</code>.</p>
+
+<p>In the second section, since we now have more than one background process, we
+must find a way to monitor them after reconnecting to them; to achieve this, a
+<code>PersistentQueue</code> is created, which acts like a regular
+<code>Queue</code> object but is instead focused on handling persistent
+communications. Upon connecting the queue to each of the previously created
+UNIX-domain sockets, the queue acts like a regular <code>Queue</code> and
+exposes received results through an iterator. Here, the principal difference
+from previous examples is the structure of results: instead of collecting each
+individual value in a flat <code>i</code> by <code>j</code> array, a list is
+returned for each value of <code>i</code> and is stored directly in another
+list.</p>
+
+<h3>Applications of Background Computations</h3>
+
+<p>Background computations are useful because they provide flexibility in the
+way the results can be collected. One area in which they can be useful is Web
+programming, where a process handling an incoming HTTP request may need to
+initiate a computation but then immediately send output to the Web client - such
+as a page indicating that the computation is "in progress" - without having to
+wait for the computation or to allocate resources to monitor it. Moreover, in
+some Web architectures, notably those employing the Common Gateway Interface
+(CGI), it is necessary for a process handling an incoming request to terminate
+before its output will be sent to clients. By using a
+<code>BackgroundCallable</code>, a Web server process can initiate a
+communication, and then subsequent server processes can be used to reconnect to
+the background computation and to wait efficiently for results.</p>
+
+<h2 id="Summary">Summary</h2>
 
 <p>The following table indicates the features used in converting one
 sequential example program to another parallel program:</p>
@@ -602,7 +882,7 @@ sequential example program to another parallel program:</p>
       <td>MakeParallel, Map, manage</td>
     </tr>
     <tr>
-      <td rowspan="3">simple2</td>
+      <td rowspan="5">simple2</td>
       <td>simple_managed_queue</td>
       <td>MakeParallel, Queue, manage</td>
     </tr>
@@ -613,6 +893,14 @@ sequential example program to another parallel program:</p>
     <tr>
       <td>simple_start</td>
       <td>Channel, Exchange (subclass), start, finish</td>
+    </tr>
+    <tr>
+      <td>simple_background_queue</td>
+      <td>MakeParallel, BackgroundCallable, BackgroundQueue</td>
+    </tr>
+    <tr>
+      <td>simple_persistent_queue</td>
+      <td>MakeParallel, BackgroundCallable, PersistentQueue</td>
     </tr>
     <tr>
       <td>simple</td>

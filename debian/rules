@@ -46,7 +46,7 @@ binary-indep: build install
 	dh_testdir
 	dh_testroot
 	dh_installchangelogs 
-	dh_installdocs		README.txt docs/*.html apidocs
+	dh_installdocs		README.txt docs/*.html docs/*.css apidocs
 	dh_installexamples	examples/* tests
 	dh_pysupport
 	dh_compress

@@ -1,3 +1,23 @@
+pprocess (0.4-1) experimental; urgency=low
+
+  [ Sandro Tosi ]
+  * New upstream release
+  * debian/patches/10_fix_pprocess.dpatch
+    - added description
+  * debian/control
+    - bump Standards-Version to 3.8.0
+      + debian/README.source added
+  * debian/copyright
+    - updated copyright years
+  * debian/rules
+    - install doc stylesheet
+
+  [ Piotr Ożarowski ]
+  * "DM-Upload-Allowed: yes" field added
+  * Rewrap long description
+
+ -- Sandro Tosi <matrixhasu@gmail.com>  Mon, 08 Sep 2008 22:10:20 +0200
+
 pprocess (0.3.1-1) unstable; urgency=low
 
   * Initial release (Closes: #456795)
