@@ -1,3 +1,20 @@
+pprocess (0.4-2) unstable; urgency=low
+
+  * Uploading to unstable, since Lenny has been released
+  * debian/control
+    - switch Vcs-Browser field to viewsvn
+    - updated my email address
+    - remove DM-Upload-Allowed flag
+  * debian/copyright
+    - updated my email address
+    - updated packaging copyright notice, extending years
+    - clarified the packaging is licensed under the same terms as upstream code
+    - clearly referring to LGPL-3 local file
+  * debian/rules
+    - build and clean only for the default python version (it's arch:all)
+
+ -- Sandro Tosi <morph@debian.org>  Sun, 15 Feb 2009 23:42:25 +0100
+
 pprocess (0.4-1) experimental; urgency=low
 
   [ Sandro Tosi ]

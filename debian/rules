@@ -12,9 +12,8 @@ build-stamp: patch-stamp
 	dh_testdir
 
 	# Add here commands to compile the package.
-	for python in $(PYVERS) ; do \
-	    $$python setup.py build; \
-	done
+	python setup.py build
+
 	# generating api documentation
 	tools/apidocs.sh
 	touch $@
@@ -22,13 +21,15 @@ build-stamp: patch-stamp
 clean: unpatch
 	dh_testdir
 	dh_testroot
+
 	# Add here commands to clean up after the build process.
-	for python in $(PYVERS) ; do \
-	    $$python setup.py clean; \
-	done
+	python setup.py clean
+
 	find . -name '*.py[co]' -delete
+	
 	[ ! -d build ] || rm -rf build
 	[ ! -d apidocs ] || rm -rf apidocs
+	
 	dh_clean build-stamp
 
 install: build
