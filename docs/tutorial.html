@@ -18,9 +18,15 @@ use the <code>pmap</code> function.</p>
 <ul>
 <li><a href="#pmap">Converting Map-Style Code</a></li>
 <li><a href="#Map">Converting Invocations to Parallel Operations</a></li>
-<li><a href="#Queue">Converting Arbitrarily-Ordered Invocations</a></li>
+<li><a href="#Queue">Converting Arbitrarily-Ordered Invocations</a>
+  <ul>
+  <li><a href="#Exchange">Replacing Queues with Exchanges</li></a>
+  <li><a href="#channel">Using Channels in Callables</li></a>
+  </ul>
+</li>
 <li><a href="#create">Converting Inline Computations</a></li>
 <li><a href="#MakeReusable">Reusing Processes in Parallel Programs</a></li>
+<li><a href="#continuous">Supporting Continuous Processes in Parallel Programs</a></li>
 <li><a href="#BackgroundCallable">Performing Computations in Background Processes</a></li>
 <li><a href="#ManagingBackgroundProcesses">Managing Several Background Processes</a></li>
 <li><a href="#Summary">Summary</a></li>
@@ -308,6 +314,8 @@ moved into a separate loop independent of the original computation loop and
 taking advantage of the more relevant "positional" information emerging from
 the queue.</p>
 
+<h3 id="Exchange">Replacing Queues with Exchanges</h3>
+
 <p>We can take this example further, illustrating some of the mechanisms
 employed by <code>pprocess</code>. Instead of collecting results in a queue,
 we can define a class containing a method which is called when new results
@@ -380,6 +388,8 @@ not try and access the results too soon. One underlying benefit not visible in
 the above code is that we no longer need to accumulate results in a queue or
 other structure so that they may be processed and assigned to the correct
 positions in the result array.</p>
+
+<h3 id="channel">Using Channels in Callables</h3>
 
 <p>For the curious, we may remove some of the remaining conveniences of the
 above program to expose other features of <code>pprocess</code>. First, we
@@ -590,6 +600,85 @@ the <code>calculate</code> function with the necessary support, the
 computations may be performed in parallel using a pool of processes instead of
 creating a new process for each computation and then discarding it, only to
 create a new process for the next computation.</p>
+
+<h2 id="continuous">Supporting Continuous Processes in Parallel Programs</h2>
+
+<p>Although reusable processes offer the opportunity to invoke a callable over
+and over within the same created process, they do not fully support the
+potential of the underlying mechanisms in <code>pprocess</code>: created
+processes can communicate multiple values to the creating process and can
+theoretically run within the same callable forever.</p>
+
+<p>Consider this modified form of the <code>calculate</code> function:</p>
+
+<pre>
+def calculate(ch, i):
+
+    """
+    A supposedly time-consuming calculation on 'i'.
+    """
+
+    for j in range(0, N):
+        time.sleep(delay)
+        ch.send((i, j, i * N + j))
+</pre>
+
+<p>This function accepts a channel <code>ch</code> together with an argument
+<code>i</code> corresponding to an entire row of the input array, as opposed
+to having two arguments (<code>i</code> and <code>j</code>) corresponding to a
+single cell in the input array. In this function, a series of calculations are
+performed and a number of values are returned through the channel, without the
+function terminating until all values have been returned for the row data.</p>
+
+<p>To use this modified function, a modified version of the
+<a href="#simple_managed_queue">simple_managed_queue</a> program is used:</p>
+
+<pre>
+    t = time.time()
+
+    # Initialise the communications queue with a limit on the number of
+    # channels/processes.
+
+    queue = pprocess.Queue(limit=limit<strong>, continuous=1</strong>)
+
+    # Initialise an array.
+
+    results = [0] * N * N
+
+    # Manage the calculate function.
+
+    calc = queue.manage(<strong>calculate</strong>)
+
+    # Perform the work.
+
+    print "Calculating..."
+    for i in range(0, N):
+        <strong>calc(i)</strong>
+
+    # Store the results as they arrive.
+
+    print "Finishing..."
+    for i, j, result in queue:
+        results[i*N+j] = result
+
+    # Show the results.
+
+    for i in range(0, N):
+        for result in results[i*N:i*N+N]:
+            print result,
+        print
+
+    print "Time taken:", time.time() - t
+</pre>
+
+<p>(This code in context with <code>import</code> statements and functions is
+found in the <code>examples/simple_continuous_queue.py</code> file.)</p>
+
+<p>Although the inner loop in the work section relocated to the
+<code>calculate</code> function, the queue still receives outputs from that
+function with positional information and a result for the result array. Thus,
+no change is needed for the retrieval of the results: they arrive in the queue
+as before.</p>
 
 <h2 id="BackgroundCallable">Performing Computations in Background Processes</h2>
 
@@ -882,9 +971,13 @@ sequential example program to another parallel program:</p>
       <td>MakeParallel, Map, manage</td>
     </tr>
     <tr>
-      <td rowspan="5">simple2</td>
+      <td rowspan="6">simple2</td>
       <td>simple_managed_queue</td>
       <td>MakeParallel, Queue, manage</td>
+    </tr>
+    <tr>
+      <td>simple_continuous_queue</td>
+      <td>Queue, manage (continuous)</td>
     </tr>
     <tr>
       <td>simple_managed</td>

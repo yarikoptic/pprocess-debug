@@ -32,6 +32,7 @@ most suitable styles for your own programs, consult the
 <li><a href="#Map">Map-style Processing</a></li>
 <li><a href="#Reusing">Reusing Processes and Channels</a></li>
 <li><a href="#MakeReusable">Making Existing Functions Parallel and Reusable</a></li>
+<li><a href="#Continuous">Continuous Processes and Channels</a></li>
 <li><a href="#BackgroundCallable">Background Processes and Callables</a></li>
 <li><a href="#PersistentQueue">Background and Persistent Queues</a></li>
 <li><a href="#Implementation">Implementation Notes</a></li>
@@ -332,6 +333,32 @@ fn = pprocess.MakeReusable(originalfn)
 
 <p>This wraps the callable in a similar fashion to <code>MakeParallel</code>, but
 provides the necessary mechanisms described above for reusable code.</p>
+
+<h2 id="Continuous">Continuous Processes and Channels</h2>
+
+<p>Much of the usage of exchanges so far has concentrated on processes which
+are created, whose callables are invoked, and then, once those callables have
+returned, either they are invoked again in the same process (when reused) or
+in a new process (when not reused). However, the underlying mechanisms
+actually support processes whose callables not only receive input at the start
+of their execution and send output at the end of their execution, but may
+provide output on a continuous basis (similar to iterator or generator
+objects).</p>
+
+<p>To enable support for continuous communications between processes, a
+keyword argument must be specified when creating an <code>Exchange</code>
+instance (or an instance of a subclass of <code>Exchange</code> such as
+<code>Map</code> or <code>Queue</code>):</p>
+
+<pre>
+exchange = MyExchange(limit=10, continuous=1) # support up to 10 processes
+</pre>
+
+<p>Code invoked in this mode of communication must be aware of channels, since
+it will need to explicitly send data via a channel to the creating process,
+instead of terminating and sending data only once (as would be done
+automatically using convenience classes such as
+<code>MakeParallel</code>).</p>
 
 <h2 id="BackgroundCallable">Background Processes and Callables</h2>
 

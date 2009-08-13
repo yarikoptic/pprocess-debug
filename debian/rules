@@ -37,7 +37,7 @@ install: build
 	dh_testroot
 
 	# Add here commands to install the package into debian/pprocess.
-	python setup.py install --root=$(CURDIR)/debian/python-pprocess
+	python setup.py install --root=$(CURDIR)/debian/python-pprocess --install-layout=deb
 
 binary-arch:
 # nothing to do here

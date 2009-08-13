@@ -4,7 +4,7 @@
 A simple parallel processing API for Python, inspired somewhat by the thread
 module, slightly less by pypar, and slightly less still by pypvm.
 
-Copyright (C) 2005, 2006, 2007, 2008 Paul Boddie <paul@boddie.org.uk>
+Copyright (C) 2005, 2006, 2007, 2008, 2009 Paul Boddie <paul@boddie.org.uk>
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the Free
@@ -20,7 +20,7 @@ You should have received a copy of the GNU Lesser General Public License along
 with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-__version__ = "0.4"
+__version__ = "0.5"
 
 import os
 import sys
@@ -37,6 +37,10 @@ try:
     set
 except NameError:
     from sets import Set as set
+
+# Special values.
+
+class Undefined: pass
 
 # Communications.
 
@@ -232,9 +236,13 @@ class Exchange:
     A communications exchange that can be used to detect channels which are
     ready to communicate. Subclasses of this class can define the 'store_data'
     method in order to enable the 'add_wait', 'wait' and 'finish' methods.
+
+    Once exchanges are populated with active channels, use of the principal
+    methods of the exchange typically cause the 'store' method to be invoked,
+    resulting in the processing of any incoming data.
     """
 
-    def __init__(self, channels=None, limit=None, reuse=0, autoclose=1):
+    def __init__(self, channels=None, limit=None, reuse=0, continuous=0, autoclose=1):
 
         """
         Initialise the exchange with an optional list of 'channels'.
@@ -245,7 +253,13 @@ class Exchange:
         this class and define a working 'store_data' method.
 
         If the optional 'reuse' parameter is set to a true value, channels and
-        processes will be reused for waiting computations.
+        processes will be reused for waiting computations, but the callable will
+        be invoked for each computation.
+
+        If the optional 'continuous' parameter is set to a true value, channels
+        and processes will be retained after receiving data sent from such
+        processes, since it will be assumed that they will communicate more
+        data.
 
         If the optional 'autoclose' parameter is set to a false value, channels
         will not be closed automatically when they are removed from the exchange
@@ -255,12 +269,17 @@ class Exchange:
         self.limit = limit
         self.reuse = reuse
         self.autoclose = autoclose
+        self.continuous = continuous
+
         self.waiting = []
         self.readables = {}
         self.removed = []
         self.poller = select.poll()
+
         for channel in channels or []:
             self.add(channel)
+
+    # Core methods, registering and reporting on channels.
 
     def add(self, channel):
 
@@ -279,9 +298,9 @@ class Exchange:
     def ready(self, timeout=None):
 
         """
-        Wait for a period of time specified by the optional 'timeout' (or until
-        communication is possible) and return a list of channels which are ready
-        to be read from.
+        Wait for a period of time specified by the optional 'timeout' in
+        milliseconds (or until communication is possible) and return a list of
+        channels which are ready to be read from.
         """
 
         fds = self.poller.poll(timeout)
@@ -322,6 +341,18 @@ class Exchange:
 
     # Enhanced exchange methods involving channel limits.
 
+    def unfinished(self):
+
+        "Return whether the exchange still has work scheduled or in progress."
+
+        return self.active() or self.waiting
+
+    def busy(self):
+
+        "Return whether the exchange uses as many channels as it is allowed to."
+
+        return self.limit is not None and len(self.active()) >= self.limit
+
     def add_wait(self, channel):
 
         """
@@ -341,38 +372,8 @@ class Exchange:
 
         # If limited, block until channels have been closed.
 
-        while self.limit is not None and len(self.active()) >= self.limit:
+        while self.busy():
             self.store()
-
-    def _get_waiting(self, channel):
-
-        """
-        Get waiting callable and argument information for new processes, given
-        the reception of data on the given 'channel'.
-        """
-
-        if self.waiting:
-            callable, args, kw = self.waiting.pop()
-
-            # Try and reuse existing channels if possible.
-
-            if self.reuse:
-
-                # Re-add the channel - this may update information related to
-                # the channel in subclasses.
-
-                self.add(channel)
-                channel.send((args, kw))
-            else:
-                return callable, args, kw
-
-        # Where channels are being reused, but where no processes are waiting
-        # any more, send a special value to tell them to quit.
-
-        elif self.reuse:
-            channel.send(None)
-
-        return None
 
     def finish(self):
 
@@ -380,16 +381,30 @@ class Exchange:
         Finish the use of the exchange by waiting for all channels to complete.
         """
 
-        while self.active():
+        while self.unfinished():
             self.store()
 
-    def store(self):
+    def store(self, timeout=None):
 
-        "For each ready channel, process the incoming data."
+        """
+        For each ready channel, process the incoming data. If the optional
+        'timeout' parameter (a duration in milliseconds) is specified, wait only
+        for the specified duration if no channels are ready to provide data.
+        """
 
-        for channel in self.ready():
-            self.store_data(channel)
-            self.start_waiting(channel)
+        # Either process input from active channels.
+
+        if self.active():
+            for channel in self.ready(timeout):
+                self.store_data(channel)
+                self.start_waiting(channel)
+
+        # Or schedule new processes and channels.
+
+        else:
+            while self.waiting and not self.busy():
+                callable, args, kw = self.waiting.pop()
+                self.start(callable, *args, **kw)
 
     def store_data(self, channel):
 
@@ -402,6 +417,42 @@ class Exchange:
 
     # Support for the convenience methods.
 
+    def _get_waiting(self, channel):
+
+        """
+        Get waiting callable and argument information for new processes, given
+        the reception of data on the given 'channel'.
+        """
+
+        # For continuous channels, no scheduling is requested.
+
+        if self.waiting and not self.continuous:
+
+            # Schedule this callable and arguments.
+
+            callable, args, kw = self.waiting.pop()
+
+            # Try and reuse existing channels if possible.
+
+            if self.reuse:
+
+                # Re-add the channel - this may update information related to
+                # the channel in subclasses.
+
+                self.add(channel)
+                channel.send((args, kw))
+
+            else:
+                return callable, args, kw
+
+        # Where channels are being reused, but where no processes are waiting
+        # any more, send a special value to tell them to quit.
+
+        elif self.reuse:
+            channel.send(None)
+
+        return None
+
     def _set_waiting(self, callable, args, kw):
 
         """
@@ -409,7 +460,7 @@ class Exchange:
         been queued for later invocation.
         """
 
-        if self.limit is not None and len(self.active()) >= self.limit:
+        if self.busy():
             self.waiting.insert(0, (callable, args, kw))
             return 1
         else:
@@ -631,6 +682,7 @@ class Map(Exchange):
         self.channel_number = 0
         self.channels = {}
         self.results = []
+        self.current_index = 0
 
     def add(self, channel):
 
@@ -648,7 +700,7 @@ class Map(Exchange):
         process and the created process.
         """
 
-        self.results.append(None) # placeholder
+        self.results.append(Undefined) # placeholder
         Exchange.start(self, callable, *args, **kw)
 
     def create(self):
@@ -660,7 +712,7 @@ class Map(Exchange):
         this exchange.
         """
 
-        self.results.append(None) # placeholder
+        self.results.append(Undefined) # placeholder
         return Exchange.create(self)
 
     def __call__(self, callable, sequence):
@@ -683,14 +735,6 @@ class Map(Exchange):
 
         return self
 
-    def __getitem__(self, i):
-        self.finish()
-        return self.results[i]
-
-    def __iter__(self):
-        self.finish()
-        return iter(self.results)
-
     def store_data(self, channel):
 
         "Accumulate the incoming data, associating results with channels."
@@ -698,6 +742,58 @@ class Map(Exchange):
         data = channel.receive()
         self.results[self.channels[channel]] = data
         del self.channels[channel]
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+
+        "Return the next element in the map."
+
+        try:
+            return self._next()
+        except IndexError:
+            pass
+
+        while self.unfinished():
+            self.store()
+            try:
+                return self._next()
+            except IndexError:
+                pass
+        else:
+            raise StopIteration
+
+    def __getitem__(self, i):
+
+        "Return element 'i' from the map."
+
+        try:
+            return self._get(i)
+        except IndexError:
+            pass
+
+        while self.unfinished():
+            self.store()
+            try:
+                return self._get(i)
+            except IndexError:
+                pass
+        else:
+            raise IndexError, i
+
+    # Helper methods for the above access methods.
+
+    def _next(self):
+        result = self._get(self.current_index)
+        self.current_index += 1
+        return result
+
+    def _get(self, i):
+        result = self.results[i]
+        if result is Undefined or isinstance(i, slice) and Undefined in result:
+            raise IndexError, i
+        return result
 
 class Queue(Exchange):
 
@@ -726,12 +822,19 @@ class Queue(Exchange):
 
         if self.queue:
             return self.queue.pop()
-        while self.active():
+
+        while self.unfinished():
             self.store()
             if self.queue:
                 return self.queue.pop()
         else:
             raise StopIteration
+
+    def __len__(self):
+
+        "Return the current length of the queue."
+
+        return len(self.queue)
 
 class MakeParallel:
 
@@ -816,7 +919,7 @@ def pmap(callable, sequence, limit=None):
 
 # Utility functions.
 
-_cpuinfo_fields = "physical id", "core id"
+_cpuinfo_fields = "processor", "physical id", "core id"
 
 def _get_number_of_cores():
 
@@ -829,18 +932,31 @@ def _get_number_of_cores():
         f = open("/proc/cpuinfo")
         try:
             processors = set()
-            processor = [None, None]
+
+            # Use the _cpuinfo_field values as "digits" in a larger unique
+            # core identifier.
+
+            processor = [None, None, None]
 
             for line in f.xreadlines():
                 for i, field in enumerate(_cpuinfo_fields):
+
+                    # Where the field is found, insert the value into the
+                    # appropriate location in the processor identifier.
+
                     if line.startswith(field):
                         t = line.split(":")
                         processor[i] = int(t[1].strip())
                         break
-                else:
-                    if line.startswith("processor") and processor[0] is not None:
-                        processors.add(tuple(processor))
-                        processor = [None, None]
+
+                # Where a new processor description is started, record the
+                # identifier.
+
+                if line.startswith("processor") and processor[0] is not None:
+                    processors.add(tuple(processor))
+                    processor = [None, None, None]
+
+            # At the end of reading the file, add any unrecorded processors.
 
             if processor[0] is not None:
                 processors.add(tuple(processor))

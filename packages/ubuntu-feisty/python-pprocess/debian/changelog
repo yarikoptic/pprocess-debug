@@ -1,3 +1,21 @@
+pprocess (0.5-0ubuntu1) feisty; urgency=low
+
+  * Added proper support in the Exchange class for
+    continuous communications between processes, providing
+    examples: simple_continuous_queue.py and the
+    concurrency-sig directory.
+  * Changed the Map class to permit incremental access to
+    received results from completed parts of the sequence of
+    inputs, also adding an iteration interface.
+  * Added an example, simple_pmap_iter.py, to demonstrate
+    iteration over maps.
+  * Fixed the get_number_of_cores function to work with
+    /proc/cpuinfo where the "physical id" field is missing.
+  * Tidied the Exchange class, adding distinct status
+    methods: unfinished and busy.
+
+ -- Paul Boddie <paul@boddie.org.uk>  Fri, 05 Jun 2009 22:30:21 +0200
+
 pprocess (0.4-0ubuntu1) feisty; urgency=low
 
   * Added support for persistent/background processes.

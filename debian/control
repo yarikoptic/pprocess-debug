@@ -3,9 +3,9 @@ Section: python
 Priority: optional
 Maintainer: Debian Python Modules Team <python-modules-team@lists.alioth.debian.org>
 Uploaders: Sandro Tosi <morph@debian.org>
-Build-Depends: debhelper (>= 5.0.38), python-all, dpatch
+Build-Depends: debhelper (>= 5.0.38), python (>= 2.5.4-1~), dpatch
 Build-Depends-Indep: python-support (>= 0.6), python-epydoc
-Standards-Version: 3.8.0
+Standards-Version: 3.8.2
 Homepage: http://www.boddie.org.uk/python/pprocess.html
 Vcs-Svn: svn://svn.debian.org/python-modules/packages/pprocess/trunk/
 Vcs-Browser: http://svn.debian.org/viewsvn/python-modules/packages/pprocess/trunk/

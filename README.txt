@@ -42,11 +42,13 @@ simple_managed_map          Yes          Yes                 Yes
 simple_managed_queue        Yes          Yes                     Yes
 simple_managed              Yes          Yes                           Yes
 simple_pmap           Yes
+simple_pmap_iter      Yes
 simple_start_queue          Yes                 Yes              Yes
 simple_start                                    Yes                    Yes
 
-The simplest parallel program is simple_pmap.py which employs the pmap
-function resembling the built-in map function in Python.
+The simplest parallel programs are simple_pmap.py and simple_pmap_iter.py
+which employ the pmap function resembling the built-in map function in
+Python.
 
 Other simple programs are those employing the Queue class, together with those
 using the manage method which associates functions or callables with Queue or
@@ -72,6 +74,14 @@ employs the MakeReusable class instead of MakeParallel in order to demonstrate
 reusable processes and channels:
 
 PYTHONPATH=. python examples/simple_managed_map_reusable.py
+
+Continuous Process Communications
+---------------------------------
+
+Another example not listed above, simple_continuous_queue.py, employs
+continuous communications to monitor output from created processes:
+
+PYTHONPATH=. python examples/simple_continuous_queue.py
 
 Persistent Processes
 --------------------
@@ -101,6 +111,17 @@ PYTHONPATH=../..:. python scene.py
 
 (This should produce a file called test.tif - a TIFF file containing a
 raytraced scene image.)
+
+Examples from the Concurrency SIG
+---------------------------------
+
+The special interest group (SIG) for concurrency in Python proposed a
+particular application as a showcase for concurrency libraries. Two examples
+are included which demonstrate pprocess and the use of continuous processes to
+implement the application concerned:
+
+PYTHONPATH=. python examples/concurrency-sig/bottles.py
+PYTHONPATH=. python examples/concurrency-sig/bottles_heartbeat.py
 
 Test Programs
 -------------
@@ -143,7 +164,23 @@ Dependencies
 ------------
 
 This software depends on standard library features which are stated as being
-available only on "UNIX"; it has only been tested on a GNU/Linux system.
+available only on "UNIX"; it has only been tested repeatedly on a GNU/Linux
+system, and occasionally on systems running OpenSolaris.
+
+New in pprocess 0.5 (Changes since pprocess 0.4)
+------------------------------------------------
+
+  * Added proper support in the Exchange class for continuous communications
+    between processes, providing examples: simple_continuous_queue.py and the
+    concurrency-sig directory.
+  * Changed the Map class to permit incremental access to received results
+    from completed parts of the sequence of inputs, also adding an iteration
+    interface.
+  * Added an example, simple_pmap_iter.py, to demonstrate iteration over maps.
+  * Fixed the get_number_of_cores function to work with /proc/cpuinfo where
+    the "physical id" field is missing.
+  * Tidied the Exchange class, adding distinct status methods: unfinished and
+    busy.
 
 New in pprocess 0.4 (Changes since pprocess 0.3.1)
 --------------------------------------------------
@@ -235,7 +272,7 @@ New in parallel 0.2 (Changes since parallel 0.1)
 Release Procedures
 ------------------
 
-Update the pprocess __version__ attribute.
+Update the pprocess __version__ attribute and the setup.py file version field.
 Change the version number and package filename/directory in the documentation.
 Update the release notes (see above).
 Check the release information in the PKG-INFO file.
