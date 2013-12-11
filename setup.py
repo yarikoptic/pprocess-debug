@@ -2,14 +2,12 @@
 
 from distutils.core import setup
 
-import pprocess
-
 setup(
     name         = "pprocess",
     description  = "Elementary parallel programming for Python",
     author       = "Paul Boddie",
     author_email = "paul@boddie.org.uk",
     url          = "http://www.boddie.org.uk/python/pprocess.html",
-    version      = pprocess.__version__,
+    version      = "0.5",
     py_modules   = ["pprocess"]
     )

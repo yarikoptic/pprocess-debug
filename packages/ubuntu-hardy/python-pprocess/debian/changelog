@@ -1,4 +1,4 @@
-parallel-pprocess (0.5-0ubuntu1) hoary; urgency=low
+pprocess (0.5-0ubuntu1) hardy; urgency=low
 
   * Added proper support in the Exchange class for
     continuous communications between processes, providing
@@ -14,9 +14,9 @@ parallel-pprocess (0.5-0ubuntu1) hoary; urgency=low
   * Tidied the Exchange class, adding distinct status
     methods: unfinished and busy.
 
- -- Paul Boddie <paul@boddie.org.uk>  Fri, 05 Jun 2009 22:28:53 +0200
+ -- Paul Boddie <paul@boddie.org.uk>  Fri, 05 Jun 2009 22:30:21 +0200
 
-parallel-pprocess (0.4-0ubuntu1) hoary; urgency=low
+pprocess (0.4-0ubuntu1) feisty; urgency=low
 
   * Added support for persistent/background processes.
   * Added a utility function to detect and return the number
@@ -26,18 +26,18 @@ parallel-pprocess (0.4-0ubuntu1) hoary; urgency=low
     pairs, since the latter do not apparently work properly
     with poll on Solaris.
 
- -- Paul Boddie <paul@boddie.org.uk>  Fri,  1 Aug 2008 20:03:44 +0200
+ -- Paul Boddie <paul@boddie.org.uk>  Fri,  1 Aug 2008 20:03:18 +0200
 
-parallel-pprocess (0.3.1-0ubuntu1) hoary; urgency=low
+pprocess (0.3.1-0ubuntu1) feisty; urgency=low
 
   * Moved the reference material out of the module docstring
     and into a separate document, converting it to XHTML in
     the process.
   * Fixed the project name in the setup script.
 
- -- Paul Boddie <paul@boddie.org.uk>  Sat, 24 Nov 2007 01:08:04 +0100
+ -- Paul Boddie <paul@boddie.org.uk>  Sat, 24 Nov 2007 01:07:39 +0100
 
-parallel-pprocess (0.3-0ubuntu1) hoary; urgency=low
+pprocess (0.3-0ubuntu1) feisty; urgency=low
 
   * Added managed callables: wrappers around callables which
     cause them to be automatically managed by the exchange
@@ -66,7 +66,7 @@ parallel-pprocess (0.3-0ubuntu1) hoary; urgency=low
   * Extended and updated the examples. Added a tutorial.
   * Added Ubuntu Feisty (7.04) package support.
 
- -- Paul Boddie <paul@boddie.org.uk>  Sun, 16 Sep 2007 20:09:53 +0200
+ -- Paul Boddie <paul@boddie.org.uk>  Sun, 16 Sep 2007 20:10:25 +0200
 
 parallel-pprocess (0.2.5-0ubuntu1) hoary; urgency=low
 
