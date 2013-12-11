@@ -28,6 +28,8 @@ import select
 import socket
 import platform
 
+from warnings import warn
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -396,8 +398,13 @@ class Exchange:
 
         if self.active():
             for channel in self.ready(timeout):
-                self.store_data(channel)
-                self.start_waiting(channel)
+                try:
+                    self.store_data(channel)
+                    self.start_waiting(channel)
+                except IOError, e:
+                    self.remove(channel)
+                    warn("Removed channel %s since caught an exception %s"
+                         % (channel, e))
 
         # Or schedule new processes and channels.
 
