@@ -32,6 +32,8 @@ most suitable styles for your own programs, consult the
 <li><a href="#Map">Map-style Processing</a></li>
 <li><a href="#Reusing">Reusing Processes and Channels</a></li>
 <li><a href="#MakeReusable">Making Existing Functions Parallel and Reusable</a></li>
+<li><a href="#BackgroundCallable">Background Processes and Callables</a></li>
+<li><a href="#PersistentQueue">Background and Persistent Queues</a></li>
 <li><a href="#Implementation">Implementation Notes</a></li>
 </ul>
 
@@ -330,6 +332,67 @@ fn = pprocess.MakeReusable(originalfn)
 
 <p>This wraps the callable in a similar fashion to <code>MakeParallel</code>, but
 provides the necessary mechanisms described above for reusable code.</p>
+
+<h2 id="BackgroundCallable">Background Processes and Callables</h2>
+
+<p>So far, all parallel computations have involved created processes which
+depend on the existence of the created process to collect results and to
+communicate with these created processes, preventing the created process from
+terminating, even if the created processes actually perform work and potentially
+create output which need not concern the process which created them. In order to
+separate creating and created processes, the concept of a background process
+(also known as a daemon process) is introduced.</p>
+
+<p>The <code>BackgroundCallable</code> class acts somewhat like the
+<code>manage</code> method on exchange-based objects, although no exchange is
+immediately involved, and instances of <code>BackgroundCallable</code> provide
+wrappers around existing parallel-aware callables which then be invoked in order
+to initiate a background computation in a created process. For example:</p>
+
+<pre>
+backgroundfn = pprocess.BackgroundCallable(address, fn)
+</pre>
+
+<p>This wraps the supplied callable (which can itself be the result of using
+<code>MakeParallel</code>), with the resulting wrapper lending itself to
+invocation like any other function. One distinguishing feature is that of the
+<code>address</code>: in order to contact the background process after
+invocation to (amongst other things) receive any result, a specific address
+must be given to define the contact point between the created process and any
+processes seeking to connect to it. Since these "persistent" communications
+employ special files (specifically UNIX-domain sockets), the address must be a
+suitable filename.</p>
+
+<h2 id="PersistentQueue">Background and Persistent Queues</h2>
+
+<p>Background processes employing persistent communications require adaptations
+of the facilities described in the sections above. For a single background
+process, the <code>BackgroundQueue</code> function is sufficient to create a
+queue-like object which can monitor the communications channel between the
+connecting process and a background process. For example:</p>
+
+<pre>
+queue = pprocess.BackgroundQueue(address)
+</pre>
+
+<p>This code will cause the process reachable via the given <code>address</code>
+to be contacted and any results made available via the created queue-like
+object.</p>
+
+<p>Where many background processes have been created, a single
+<code>PersistentQueue</code> object can monitor their communications by being
+connected to them all, as in the following example:</p>
+
+<pre>
+queue = pprocess.PersistentQueue()
+for address in addresses:
+    queue.connect(address)
+</pre>
+
+<p>Here, the queue monitors all previously created processes whose addresses
+reside in the <code>addresses</code> sequence. Upon iterating over the queue,
+results will be taken from whichever process happens to have data available in
+no particular pre-defined order.</p>
 
 <h2 id="Implementation">Implementation Notes</h2>
 

@@ -1,3 +1,15 @@
+parallel-pprocess (0.4-0ubuntu1) hoary; urgency=low
+
+  * Added support for persistent/background processes.
+  * Added a utility function to detect and return the number
+    of processor cores available.
+  * Added missing documentation stylesheet.
+  * Added support for Solaris using pipes instead of socket
+    pairs, since the latter do not apparently work properly
+    with poll on Solaris.
+
+ -- Paul Boddie <paul@boddie.org.uk>  Fri,  1 Aug 2008 20:03:44 +0200
+
 parallel-pprocess (0.3.1-0ubuntu1) hoary; urgency=low
 
   * Moved the reference material out of the module docstring
